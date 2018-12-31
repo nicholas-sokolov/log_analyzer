@@ -36,7 +36,7 @@ def main():
     log_path = find_log(log_dir, log_name)
     if not log_path:
         exit(1)
-    log_data = parse_log(log_path)
+    log_data = parse_log(log_path, settings)
 
     print(log_path)
 
@@ -46,9 +46,9 @@ def main():
 
 
 def get_settings(configfile):
-    """ Получить настройки из файла если он есть, затем обновить локальные настройки
-    :param str configfile: Путь до json файла с настройками
-    :return: Dictionary с настройками
+    """ Get settings of external config file if it exist, and then update of local settings
+    :param str configfile: Path to external json file with settings
+    :return: Dictionary with current settings
     """
     settings = {}
     if configfile is None:
@@ -94,32 +94,44 @@ def find_log(log_dir, name):
     return os.path.join(log_dir, result_list[0])
 
 
-def parse_log(path):
-    if os.path.splitext(path)[-1] == '.gz':
-        with gzip.open(path) as f:
-            file_content = f.readlines()
-    else:
-        with open(path) as f:
-            file_content = f.readlines()
+def get_logs(file, settings):
+    """
+    # TODO: сделать подсчет доли нераспаршеных записей
+
+    :param GzipFile|TextIOWrapper file:
+    :param settings
+    :return:
+    """
+    common_counter = 0
     pattern = re.compile(log_pattern)
-    result = {}
-    for item in file_content:
-        if not pattern.search(item.decode()):
-            # TODO: сделать подсчет доли нераспаршеных записей
+    for line in file:
+        if common_counter >= settings.get('REPORT_SIZE'):
+            return
+        line = line.decode()
+        if not pattern.search(line):
             continue
-        log_line = pattern.search(item.decode())
-        key = log_line.group('request')
-        time = float(log_line.group('request_time'))
 
-        try:
-            count = result.get(key).get('count') + 1
-            time_sum = round(result.get(key).get('time_sum') + time, 3)
-        except AttributeError as err:
-            count = 1
-            time_sum = time
-        result.update({key: {'count': count, 'time_sum': time_sum}})
+        log_line = pattern.search(line)
+        request_url = log_line.group('request')
+        request_time = log_line.group('request_time')
+        common_counter += 1
 
-    print(result)
+        yield request_url, request_time
+
+
+def parse_log(path, settings):
+    """
+    # TODO: analyze
+    :param path:
+    :param settings:
+    :return:
+    """
+    filename, extension = os.path.splitext(path)
+    file = gzip.open(path) if extension == '.gz' else open(path)
+
+    for request, time in get_logs(file, settings):
+        print(request)
+    file.close()
 
 
 if __name__ == "__main__":
