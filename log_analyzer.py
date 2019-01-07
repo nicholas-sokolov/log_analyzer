@@ -66,7 +66,7 @@ def main():
         os.mkdir(settings['REPORT_DIR'])
     elif os.path.exists(report_path):
         logger.info('Report already exist {}'.format(report_path))
-        return
+        exit(0)
 
     logger.info('Start log analyzing...')
     logs_data = parse_log(logfile.path)
@@ -103,17 +103,14 @@ def get_settings(configfile):
     :param str configfile: Path to external json file with settings
     :return: Dictionary with current settings
     """
-    settings = {}
     if configfile is None:
-        return config
+        pass
     elif not configfile.endswith('.json'):
         logger.error('Configfile must have json file')
-        return config
     elif os.path.exists(configfile) and os.path.getsize(configfile):
         with open(configfile) as file:
-            settings = json.load(file)
-
-    return config.update(settings)
+            config.update(json.loads(file.read()))
+    return config
 
 
 def get_latest_logfile(log_dir, name):
