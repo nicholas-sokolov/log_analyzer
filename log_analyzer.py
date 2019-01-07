@@ -106,6 +106,9 @@ def get_settings(configfile):
     settings = {}
     if configfile is None:
         return config
+    elif not configfile.endswith('.json'):
+        logger.error('Configfile must have json file')
+        return config
     elif os.path.exists(configfile) and os.path.getsize(configfile):
         with open(configfile) as file:
             settings = json.load(file)
