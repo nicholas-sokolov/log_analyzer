@@ -5,7 +5,7 @@ import stat
 import time
 import unittest
 
-from log_analyzer import config
+from src.log_analyzer import config
 
 
 class SimplisticTest(unittest.TestCase):
@@ -30,30 +30,29 @@ class SimplisticTest(unittest.TestCase):
                 os.remove(item)
 
     def testBasic(self):
-        dir_reports = './test_report_dir'
+        dir_reports = 'tests\\test_report_dir'
         settings = {
             'REPORT_DIR': dir_reports,
             'REPORT_SIZE': 10,
         }
-        configfile = 'test_config.json'
+        configfile = 'tests\\test_config.json'
         self.update_configfile(configfile, settings)
-        os.system('log_analyzer.py --config {}'.format(configfile))
+        os.system('src\\log_analyzer.py --config {}'.format(configfile))
         self.assertTrue(os.path.exists(dir_reports), 'No report directory')
         self.remove(dir_reports, configfile)
 
     def testDoubleBasic(self):
-        os.system('log_analyzer.py')
-        dir_reports = './test_report_dir'
+        dir_reports = 'tests\\test_report_dir'
         settings = {
             'REPORT_DIR': dir_reports,
             'REPORT_SIZE': 10,
         }
-        configfile = 'test_config.json'
+        configfile = 'tests\\test_config.json'
         self.update_configfile(configfile, settings)
-        os.system('log_analyzer.py --config {}'.format(configfile))
+        os.system('src\\log_analyzer.py --config {}'.format(configfile))
         self.assertTrue(os.path.exists(dir_reports), 'No report directory')
         start = time.time()
-        os.system('log_analyzer.py --config {}'.format(configfile))
+        os.system('src\\log_analyzer.py --config {}'.format(configfile))
         self.assertTrue(time.time() - start < 10, "Second run more then 10 sec.")
         self.remove(dir_reports, configfile)
 
