@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+from string import Template
 from collections import OrderedDict
 from collections import namedtuple
 from datetime import datetime
@@ -34,6 +35,8 @@ logging.basicConfig(format='[%(asctime)s] %(levelname).1s %(message)s',
                     handlers=handlers_list,
                     level=logging.INFO)
 logger = logging.getLogger('log_analyzer')
+
+log_file_type = namedtuple('Log_file', ['date', 'extension', 'path'])
 
 
 def main():
@@ -119,8 +122,6 @@ def get_latest_logfile(log_dir, name):
     :param str name: Log name
     :return: str|None, path to latest required logfile if it was found, else None
     """
-    log_file = namedtuple('Log_file', ['date', 'extension', 'path'])
-
     logs_list = os.listdir(log_dir)
 
     found_logfile = None
@@ -133,17 +134,22 @@ def get_latest_logfile(log_dir, name):
         if log_name != name:
             continue
 
-        item_date = datetime.strptime(date, '%Y%m%d')
+        try:
+            item_date = datetime.strptime(date, '%Y%m%d')
+        except ValueError as err:
+            logger.exception(err)
+            logger.error("Log '{}' was skipped".format(log_item))
+            continue
 
         if not found_logfile or item_date > found_logfile.date:
-            found_logfile = log_file(item_date, ext, os.path.join(log_dir, log_item))
+            found_logfile = log_file_type(item_date, ext, os.path.join(log_dir, log_item))
 
     return found_logfile
 
 
 def get_logs(file):
     """ Generator of logs with url and request_time
-    :param GzipFile|TextIOWrapper file: File with logs
+    :param GzipFile|TextIOWrapper file: Log file that was opened in "rb" mode
     :return: None|namedtuple(url, request_time)
     """
     Log = namedtuple('Log', ['url', 'request_time'])
@@ -167,7 +173,7 @@ def parse_log(path):
     :return: Dictionary
     """
     filename, extension = os.path.splitext(path)
-    file = gzip.open(path) if extension == '.gz' else open(path)
+    file = gzip.open(path, 'rb') if extension == '.gz' else open(path, 'rb')
 
     result_logs = {}
     common_counter = 0
@@ -209,9 +215,8 @@ def save_report(data, report_path):
         lines = f.readlines()
 
     for index in range(len(lines)):
-        if re.search(r'\$table_json', lines[index]):
-            lines[index] = re.sub(r'\$table_json', str(data), lines[index])
-            break
+        s = Template(lines[index])
+        lines[index] = s.safe_substitute(table_json=data)
 
     with open(report_path, 'w') as f:
         f.writelines(lines)
