@@ -212,14 +212,13 @@ def save_report(data, report_path):
     template_report = 'report.html'
 
     with open(template_report) as f:
-        lines = f.readlines()
+        lines = f.read()
 
-    for index in range(len(lines)):
-        s = Template(lines[index])
-        lines[index] = s.safe_substitute(table_json=data)
+    s = Template(lines)
+    lines = s.safe_substitute(table_json=data)
 
     with open(report_path, 'w') as f:
-        f.writelines(lines)
+        f.write(lines)
 
 
 if __name__ == "__main__":
